@@ -173,7 +173,9 @@ export default function HeroScene() {
     };
 
     // Ícono "ka" extruido como protagonista
-    const ka = buildKaIcon(mOrange, mYellow);
+    // Material propio para el "ka": menos brillo para que no se "lave" a rosado con la luz frontal
+    const mKa = mat(ORANGE, { roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.4 });
+    const ka = buildKaIcon(mKa, mYellow);
     const kaHolder = new THREE.Group();
     kaHolder.add(ka);
 
@@ -193,18 +195,19 @@ export default function HeroScene() {
 
     // Posiciones pensadas para un encuadre 16:9 (medio ancho visible ≈ 7.8); se reescalan en resize()
     const items: Array<[THREE.Object3D, [number, number, number], number, [number, number, number]?]> = [
-      [kaHolder, [3.6, 0.1, 0.5], 1.5, [0, 0, 0]],
-      [new THREE.Mesh(geos.ring, mOrange), [6.2, 2.9, -2], 1],
-      [new THREE.Mesh(geos.star, mYellow), [1.6, 3.1, -1.5], 0.85, [0.1, 0.4, 0.5]],
-      [new THREE.Mesh(geos.capsule, mGreen), [6.3, -2.3, -1], 0.9],
-      [new THREE.Mesh(geos.arrow, mOrange), [2.2, -3.0, 0], 0.75, [0.1, 0.5, 0.05]],
-      [percent, [0.4, 3.5, -3], 0.8],
+      [kaHolder, [0, 0.5, 0.5], 1.8, [0, 0, 0]],
+      // Figuras repartidas a los lados para enmarcar el "ka" central
+      [new THREE.Mesh(geos.ring, mOrange), [7.0, 1.3, -2], 1],
+      [new THREE.Mesh(geos.star, mYellow), [-5.8, 2.9, -1.5], 0.85, [0.1, 0.4, 0.5]],
+      [new THREE.Mesh(geos.capsule, mGreen), [5.6, -2.4, -1], 0.9],
+      [new THREE.Mesh(geos.arrow, mOrange), [-6.0, -2.2, 0], 0.75, [0.1, 0.5, 0.05]],
+      [percent, [5.2, 3.5, -3], 0.8],
       [gift, [-8.6, -4.0, -2], 0.8],
-      [new THREE.Mesh(geos.star, mOrange), [-1.2, -4.4, -3], 0.6, [0.2, 0.3, 0.6]],
-      [new THREE.Mesh(geos.ring, mYellow), [-2.8, 3.6, -5], 0.7],
-      [new THREE.Mesh(geos.sphere, mCream), [6.9, 0.4, -4], 0.9],
-      [new THREE.Mesh(geos.capsule, mOrange), [-9.5, 2.2, -6], 0.8],
-      [new THREE.Mesh(geos.halfRing, mGreen), [4.2, 3.6, -4], 1],
+      [new THREE.Mesh(geos.star, mOrange), [4.6, -4.0, -3], 0.6, [0.2, 0.3, 0.6]],
+      [new THREE.Mesh(geos.ring, mYellow), [-6.6, 3.5, -5], 0.7],
+      [new THREE.Mesh(geos.sphere, mCream), [8.4, 0.4, -4], 0.9],
+      [new THREE.Mesh(geos.capsule, mOrange), [-9.5, 0.6, -6], 0.8],
+      [new THREE.Mesh(geos.halfRing, mGreen), [-1.6, 4.6, -8], 1],
       [new THREE.Mesh(geos.sphere, mWhite), [-11.5, -0.6, -6], 0.7],
       [new THREE.Mesh(geos.box, mOrange), [8.5, -3.5, -7], 0.7],
       [new THREE.Mesh(geos.star, mGreen), [-8.5, 3.5, -8], 0.8],
@@ -212,7 +215,24 @@ export default function HeroScene() {
     items.forEach(([o, p, s, spin]) => add(o, p, s, spin));
     const origins = floaters.map((f) => ({ pos: f.base.clone(), scale: f.scale }));
     const kaFloater = floaters[0];
-    kaFloater.mesh.rotation.set(0, -0.35, 0);
+    kaFloater.mesh.rotation.set(0, 0, 0);
+
+    // Órbita alrededor del "ka": anillo inclinado con satélites de colores de marca
+    const ORBIT_R = 1.85;
+    const orbitTilt = new THREE.Group();
+    orbitTilt.rotation.set(1.2, 0, -0.32);
+    const orbit = new THREE.Group();
+    orbit.add(new THREE.Mesh(new THREE.TorusGeometry(ORBIT_R, 0.02, 12, 200), mYellow));
+    const satGeo = new THREE.SphereGeometry(0.11, 24, 24);
+    [mOrange, mGreen, mYellow, mCream, mOrange].forEach((m, i, arr) => {
+      const s = new THREE.Mesh(satGeo, m);
+      const a = (i / arr.length) * Math.PI * 2;
+      s.position.set(Math.cos(a) * ORBIT_R, Math.sin(a) * ORBIT_R, 0);
+      s.scale.setScalar(i % 2 ? 0.7 : 1);
+      orbit.add(s);
+    });
+    orbitTilt.add(orbit);
+    scene.add(orbitTilt);
 
     // Confeti de partículas suaves
     const pCount = 220;
@@ -251,14 +271,24 @@ export default function HeroScene() {
       return null;
     };
 
-    const onMove = (e: PointerEvent) => {
+    // Solo hacemos hover con mouse real; en táctil el puntero queda en el centro y "inflaría" al "ka"
+    let hasMouse = false;
+    const setPointer = (e: PointerEvent | MouseEvent) => {
       const r = mount.getBoundingClientRect();
       pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
       pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
     };
-    const onClick = () => {
-      if (hovered) {
-        hovered.kick = 1;
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") hasMouse = true;
+      setPointer(e);
+    };
+    const onClick = (e: MouseEvent) => {
+      setPointer(e);
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(root.children, true)[0];
+      const target = hit ? findFloater(hit.object) : null;
+      if (target) {
+        target.kick = 1;
       } else {
         floaters.forEach((f) => (f.kick = Math.max(f.kick, 0.5 + Math.random() * 0.3)));
       }
@@ -286,14 +316,11 @@ export default function HeroScene() {
       floaters.forEach((f, i) => {
         const o = origins[i];
         if (f === kaFloater) {
-          if (narrow) {
-            // Móvil/tablet vertical: el "ka" arriba a la derecha, detrás del contenido
-            f.base.set(halfW * 0.45, halfH * 0.58, -1);
-            f.scale = Math.min(1.3, halfW * 0.38);
-          } else {
-            f.base.set(halfW * 0.5, 0.1, 0.5);
-            f.scale = Math.min(1.6, halfW * 0.22) ;
-          }
+          // Siempre centrado, un poco por encima de los botones; tamaño según el lado más corto
+          // Más grande y un poco más abajo para llenar la portada y quedar cerca de los botones
+          f.base.set(0, halfH * (narrow ? 0.02 : 0.15), 0.5);
+          // En móvil algo más chico para que la órbita quepa a lo ancho
+          f.scale = Math.min(halfW * (narrow ? 0.47 : 0.6), halfH * 0.47);
           return;
         }
         f.base.set(o.pos.x * fx, o.pos.y * (narrow ? fy : 1), o.pos.z);
@@ -319,9 +346,12 @@ export default function HeroScene() {
       pointerSmooth.lerp(pointer, 0.06);
 
       // Hover con raycast
-      raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObjects(root.children, true)[0];
-      const f = hit ? findFloater(hit.object) : null;
+      let f: Floater | null = null;
+      if (hasMouse) {
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObjects(root.children, true)[0];
+        f = hit ? findFloater(hit.object) : null;
+      }
       if (f !== hovered) {
         hovered = f;
         mount.style.cursor = f ? "pointer" : "";
@@ -346,7 +376,7 @@ export default function HeroScene() {
 
         if (fl === kaFloater) {
           // El "ka" mira hacia el cursor
-          const ty = pointerSmooth.x * 0.6 - 0.25 + fl.kick * Math.PI * 2;
+          const ty = pointerSmooth.x * 0.6 + Math.sin(t * 0.6) * 0.18 * motion + fl.kick * Math.PI * 2;
           const tx = -pointerSmooth.y * 0.35;
           fl.mesh.rotation.y += (ty - fl.mesh.rotation.y) * 0.08;
           fl.mesh.rotation.x += (tx - fl.mesh.rotation.x) * 0.08;
@@ -361,6 +391,12 @@ export default function HeroScene() {
 
       dots.rotation.y = pointerSmooth.x * 0.08;
       dots.position.y = sp * 2 + Math.sin(t * 0.3) * 0.2;
+
+      // La órbita sigue al "ka" y gira sobre su propio plano
+      orbitTilt.position.copy(kaFloater.mesh.position);
+      orbitTilt.scale.setScalar(kaFloater.mesh.scale.x);
+      orbitTilt.rotation.y = pointerSmooth.x * 0.25;
+      orbit.rotation.z += dt * 0.45 * motion * (1 + kaFloater.kick * 6);
 
       renderer.render(scene, camera);
     };

@@ -6,6 +6,7 @@ import {
   CursorBlob,
   HeroScene,
   RevealObserver,
+  ShowAfterHero,
   StickyHeader,
   SurpriseSection,
   TiltCard,
@@ -46,7 +47,10 @@ export default function Home() {
             <a className="nav-link" href="#sorpresa">Sorpresa</a>
             <a className="nav-link" href="#redes">Redes</a>
           </nav>
-          <CatalogButton className="btn btn-orange btn-shine !px-5 !py-2.5 text-sm sm:text-base" />
+          {/* En la portada ya está el botón grande: el del header aparece al bajar, así no se repite */}
+          <ShowAfterHero>
+            <CatalogButton className="btn btn-orange btn-shine !px-5 !py-2.5 text-sm sm:text-base" />
+          </ShowAfterHero>
         </div>
       </StickyHeader>
 
@@ -54,35 +58,24 @@ export default function Home() {
         {/* ---------------- HERO ---------------- */}
         <section
           id="inicio"
-          className="relative min-h-[100svh] overflow-hidden bg-[radial-gradient(ellipse_at_70%_40%,#fff3dc_0%,#fbedc8_45%,#f9dfae_100%)]"
+          className="relative min-h-[100svh] overflow-hidden bg-[radial-gradient(ellipse_at_50%_42%,#fff6e4_0%,#fbedc8_42%,#f7d79f_100%)]"
         >
           <HeroScene />
-          <div className="pointer-events-none relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-4 pb-16 pt-32 sm:px-6 md:justify-center md:pb-24">
-            <div className="max-w-xl">
-              <h1 className="sr-only">Kawii Pluss — De todo, para todos</h1>
-              {/* En móvil el logo ya está en el header: aquí solo se muestra desde md */}
-              <div className="pointer-events-auto hidden w-full max-w-[520px] md:block">
-                <Logo animated className="h-auto w-full drop-shadow-[0_8px_0_rgba(255,85,0,0.12)]" />
-              </div>
-              <p className="max-w-md md:mt-8 text-lg font-medium leading-relaxed text-[var(--k-ink)]/80 [animation:fade-up_.7s_ease-out_1.4s_both] md:text-xl">
-                Lo necesario, lo inesperado y lo que no sabías que querías. Productos bonitos, prácticos y a precios
-                que te hacen sonreír.
-              </p>
-              <div className="pointer-events-auto mt-8 flex flex-wrap gap-3 [animation:fade-up_.7s_ease-out_1.6s_both]">
-                <CatalogButton className="btn btn-orange btn-shine text-lg">
+          {/* Portada: el "ka" 3D ocupa el centro (lo dibuja HeroScene) y abajo solo los dos botones */}
+          <div className="pointer-events-none relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col items-center justify-end px-4 pb-[9svh] pt-32 sm:px-6 md:pb-[11svh]">
+            <h1 className="sr-only">Kawii Pluss — De todo, para todos</h1>
+            <div className="w-full max-w-md sm:w-auto sm:max-w-none">
+              <div className="pointer-events-auto flex flex-col gap-3 [animation:fade-up_.7s_ease-out_.6s_both] sm:flex-row sm:justify-center">
+                <CatalogButton className="btn btn-orange btn-shine justify-center text-lg md:!px-8 md:!py-4 md:text-xl">
                   Pedir catálogo
                   <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M7 17 17 7M8 7h9v9" />
                   </svg>
                 </CatalogButton>
-                <a href="#categorias" className="btn btn-ghost text-lg">
+                <a href="#categorias" className="btn btn-ghost justify-center text-lg md:!px-8 md:!py-4 md:text-xl">
                   Ver categorías
                 </a>
               </div>
-              <p className="mt-8 hidden items-center gap-2 text-sm font-medium text-[var(--k-ink)]/50 md:flex [animation:fade-up_.7s_ease-out_2s_both]">
-                <span className="inline-block h-2 w-2 animate-ping rounded-full bg-[var(--k-orange)]" />
-                Mueve el mouse y haz click en las figuras
-              </p>
             </div>
           </div>
           {/* ola inferior */}
@@ -354,12 +347,12 @@ export default function Home() {
       </footer>
 
       {/* Botón flotante */}
-      <div className="fixed bottom-5 right-5 z-40 md:hidden">
+      <ShowAfterHero className="fixed bottom-5 right-5 z-40 md:hidden">
         <CatalogButton className="btn btn-orange !p-4 shadow-xl">
           <SocialIcons.whatsapp className="h-6 w-6" />
           <span className="sr-only">Pedir catálogo</span>
         </CatalogButton>
-      </div>
+      </ShowAfterHero>
     </CatalogProvider>
   );
 }

@@ -77,6 +77,25 @@ export function StickyHeader({ children }: { children: React.ReactNode }) {
   return <header className={`site-header ${scrolled ? "is-scrolled" : ""}`}>{children}</header>;
 }
 
+/** Muestra su contenido solo cuando se ha bajado más allá de la portada. */
+export function ShowAfterHero({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const on = () => setShow(window.scrollY > window.innerHeight * 0.6);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
+  return (
+    <div
+      className={`${className} transition-all duration-300 ${show ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"}`}
+      inert={!show}
+    >
+      {children}
+    </div>
+  );
+}
+
 /** Cursor-blob decorativo que sigue al mouse (solo escritorio). */
 export function CursorBlob() {
   const ref = useRef<HTMLDivElement>(null);
